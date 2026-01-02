@@ -55,8 +55,6 @@ const ColorPaletteUI: React.FC<ColorPaletteUIProps> = ({ id }) => {
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
-
     const fetchAllPalettes = async () => {
       console.log("testing 🔥🔥🔥");
 
@@ -75,19 +73,14 @@ const ColorPaletteUI: React.FC<ColorPaletteUIProps> = ({ id }) => {
       }
     };
 
+    if (!id) return;
+
     // Initial fetch
     fetchAllPalettes();
 
     // Subscribe to realtime changes
-    const channelName = `palettes:${id}`;
-    console.log(
-      "🔌 Setting up realtime subscription for channel:",
-      channelName
-    );
-
-    let isSubscribed = false;
     const channel = supabase
-      .channel(channelName)
+      .channel(`palettes:${id}`)
       .on(
         "postgres_changes",
         {
@@ -97,44 +90,25 @@ const ColorPaletteUI: React.FC<ColorPaletteUIProps> = ({ id }) => {
           filter: `project_id=eq.${id}`,
         },
         (payload) => {
-          console.log(
-            "🎨 Palette change detected:",
-            payload.eventType,
-            payload
-          );
-          console.log("🔄 Calling fetchAllPalettes...");
-          // Refetch all palettes when any change occurs
+          console.log("🎨 New palette inserted:", payload);
+          // Refetch all palettes when new one is inserted
           fetchAllPalettes();
         }
       )
       .subscribe((status) => {
         console.log("📡 Realtime subscription status:", status);
         if (status === "SUBSCRIBED") {
-          isSubscribed = true;
           console.log(
             "✅ Successfully subscribed to palette changes for project:",
             id
           );
-          console.log("🔍 Channel name:", channelName);
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           console.error("❌ Realtime subscription failed:", status);
-          isSubscribed = false;
-        } else {
-          console.log("⚠️ Subscription status:", status);
         }
       });
 
-    // Polling fallback - check for new palettes every 3 seconds if realtime isn't working
-    const pollInterval = setInterval(() => {
-      if (!isSubscribed) {
-        console.log("🔄 Polling for palette updates (realtime not active)...");
-        fetchAllPalettes();
-      }
-    }, 3000);
-
-    // Cleanup subscription and polling on unmount
+    // Cleanup subscription on unmount
     return () => {
-      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
   }, [id]);
