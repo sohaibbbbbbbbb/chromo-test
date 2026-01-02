@@ -23,7 +23,8 @@ export async function POST(req: Request) {
         return new Response('Failed to fetch messages', { status: 500 });
 
     const anthropic = createAnthropic({
-    apiKey: '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'
+    apiKey:
+      "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",
     });
 
     const result = streamText({
