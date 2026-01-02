@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const { projectId, prompt } = await req.json();
 
     const anthropic = createAnthropic({
-        apiKey: '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'
+         apiKey: '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'
     });
 
     const result = await generateText({
